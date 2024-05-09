@@ -8,7 +8,13 @@ config: |
   <View>
 
     <Header value="Select label and click the image to start"/>
-    <Image name="image" value="$image" zoom="true"/>
+    <Image name="image" value="$image"       
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
 
     <PolygonLabels name="label" toName="image"
                    strokeWidth="3" pointSize="small"

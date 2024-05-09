@@ -5,7 +5,13 @@ image: /static/templates/image-classification.png
 details: <h1>Classify the image</h1>
 config: |
   <View>
-    <Image name="image" value="$image"/>
+    <Image name="image" value="$image"
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
     <Choices name="choice" toName="image">
       <Choice value="Adult content"/>
       <Choice value="Weapons" />

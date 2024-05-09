@@ -8,7 +8,13 @@ config: |
     <View style="display:flex;justify-content:center">
       <PolygonLabels name="objects" toName="image" value="$objects"/>
     </View>
-    <Image name="image" value="$image"/>
+    <Image name="image" value="$image"      
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
   </View>
   <!-- {
     "data": {

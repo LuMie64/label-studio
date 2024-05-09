@@ -10,5 +10,11 @@ config: |
       <Label value="Face" background="red" />
       <Label value="Nose" background="green" />
     </KeyPointLabels>
-    <Image name="img-1" value="$img" />
+    <Image name="img-1" value="$img"       
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
   </View>

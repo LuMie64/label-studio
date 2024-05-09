@@ -6,7 +6,13 @@ image: /static/templates/object-detection-with-bounding-boxes.png
 details: <h1>Draw a bounding box around the object</h1>
 config: |
   <View>
-    <Image name="image" value="$image"/>
+    <Image name="image" value="$image"
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
     <RectangleLabels name="label" toName="image">
       <Label value="Airplane" background="green"/>
       <Label value="Car" background="blue"/>

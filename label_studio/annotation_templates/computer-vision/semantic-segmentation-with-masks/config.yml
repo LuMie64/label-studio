@@ -6,7 +6,13 @@ image: /static/templates/semantic-segmentation-with-masks.png
 details: <h1>Draw masks around the object with the brush tool</h1>
 config: |
   <View>
-    <Image name="image" value="$image" zoom="true"/>
+    <Image name="image" value="$image"
+      zoom="true" 
+      rotateControl="true" 
+      zoomControl="true" 
+      brightnesscontrol="true" 
+      contrastcontrol="true"
+    />
     <BrushLabels name="tag" toName="image">
       <Label value="Airplane" background="rgba(255, 0, 0, 0.7)"/>
       <Label value="Car" background="rgba(0, 0, 255, 0.7)"/>
