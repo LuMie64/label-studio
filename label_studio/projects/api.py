@@ -583,6 +583,7 @@ class TemplateListAPI(generics.ListAPIView):
     swagger_schema = None
 
     def list(self, request, *args, **kwargs):
+        print(request.META.get('SECRET_KEY'))
         annotation_templates_dir = find_dir('annotation_templates')
         configs = []
         for config_file in pathlib.Path(annotation_templates_dir).glob('**/*.yml'):

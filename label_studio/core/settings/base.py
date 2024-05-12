@@ -114,7 +114,8 @@ if DOMAIN_FROM_REQUEST:
 INTERNAL_PORT = '8080'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_bool_env('DEBUG', True)
+#DEBUG = get_bool_env('DEBUG', True)
+DEBUG=True
 DEBUG_MODAL_EXCEPTIONS = get_bool_env('DEBUG_MODAL_EXCEPTIONS', True)
 
 # Whether to verify SSL certs when making external requests, eg in the uploader
@@ -223,6 +224,7 @@ INSTALLED_APPS = [
     'labels_manager',
     'ml_models',
     'ml_model_providers',
+    'autoenhance',
 ]
 
 MIDDLEWARE = [

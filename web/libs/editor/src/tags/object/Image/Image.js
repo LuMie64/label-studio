@@ -613,6 +613,8 @@ const Model = types
 
       if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env));
 
+      if (true) manager.addTool("AutoEnhance", Tools.AutoEnhance.create({}, env));
+      
       createImageEntities();
     }
 
