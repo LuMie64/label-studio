@@ -50,7 +50,8 @@ const _Tool = types
         return data
         }
 
-        //const data = await api.callApi("checkMaximPrerequisite");
+        const api = useAPI();
+        const data = await api.callApi("checkMaximPrerequisite");
 
         console.log(testPrerequisties())
 
@@ -75,7 +76,6 @@ const _Tool = types
         )
         console.log(transformedData)
         console.log(process.env)
-        console.log('Pimmel')
 
         // get image properties from ImageRef, use getTransformedImageData to get pixel values, send to python, perform magic adjust source of image??
     },
