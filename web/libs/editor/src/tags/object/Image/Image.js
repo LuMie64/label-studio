@@ -613,7 +613,7 @@ const Model = types
 
       if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env));
 
-      if (true) manager.addTool("AutoEnhance", Tools.AutoEnhance.create({}, env));
+      if (true) manager.addTool("AutoEnhance", Tools.AutoEnhance.create({currentSrc: this.setCurrentSrc}, env));
       
       createImageEntities();
     }
@@ -748,6 +748,11 @@ const Model = types
 
     setContrastGrade(value) {
       self.contrastGrade = value;
+    },
+
+    setImageSource(value) {
+      self.src = value;
+      self.imageSource = value;
     },
 
     setGridSize(value) {

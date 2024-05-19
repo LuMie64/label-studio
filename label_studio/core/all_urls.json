@@ -1702,5 +1702,11 @@
         "module": "django.contrib.auth.views.LogoutView",
         "name": "rest_framework:logout",
         "decorators": ""
+    },
+    {
+        "url": "/api/autoenhance/",
+        "module": "autoenhance.api.AutoEnhanceAPI",
+        "name": "auto_enhance",
+        "decorators": ""
     }
 ]
