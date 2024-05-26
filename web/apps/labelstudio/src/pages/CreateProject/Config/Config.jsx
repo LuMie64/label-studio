@@ -16,6 +16,7 @@ import "./Config.styl";
 import { Preview } from "./Preview";
 import { DEFAULT_COLUMN, EMPTY_CONFIG, isEmptyConfig, Template } from "./Template";
 import { TemplatesList } from "./TemplatesList";
+import { EmptyConfigVisual } from "./emptyconfigvisual"
 
 import "./codemirror.css";
 import "./config-hint";
@@ -23,128 +24,6 @@ import tags from "./schema.json";
 
 const wizardClass = cn("wizard");
 const configClass = cn("configure");
-
-
-const EmptyConfigPlaceholder_old = () => (
-  <div className={configClass.elem("empty-config")}>
-    <p>Your labeling configuration is empty. It is required to label your data.</p>
-    <p>
-      Start from one of our predefined templates or create your own config on the Code panel. The labeling config is
-      XML-based and you can{" "}
-      <a href="https://labelstud.io/tags/" target="_blank" rel="noreferrer">
-        read about the available tags in our documentation
-      </a>
-      .
-    </p>
-  </div>
-);
-
-/*  components to look into:
-      - cd
-      - menu      
-      - dropdwon
-      - button
-      - template
-*/
-
-const EmptyConfigPlaceholder = ({setTemplate}) => {
-
-  const [selectedValue, setSelectedValue] = useState('');
-
-  const [tagArray, setTagArray] = useState([])
-
-  const handleObjectSelection = (event) => {
-    setSelectedValue(event.target.value);
-  };
-
-  const handleOptionSelection = (event) => {
-    const { name, type, value, checked } = event.target;
-    const inputValue = type === 'checkbox' ? checked : value;
-
-    setTagArray(prevValues => {
-      const existingValueIndex = prevValues.findIndex(val => val.name === name);
-
-      if (existingValueIndex > -1) {
-        return prevValues.map((val, index) => index === existingValueIndex ? { name, value: inputValue } : val);
-      } else {
-        return [...prevValues, {name, value: inputValue}];
-      }
-    });
-  };
-
-  function extractValue(key){
-    if (tagArray.some(obj => obj.hasOwnProperty(key))) {
-      const index = tagArray.findIndex(obj => obj.hasOwnProperty(key));
-      const value = tagArray[index][key]
-      setTagArray(tagArray.filter((_, i) => i !== index))
-      return value
-    } else {
-      return selectedValue
-    }
-  }
-
-  const createTemplate = () => {
-    console.log(tagArray)
-    const tagObjektName = extractValue("name");
-    const tagObjektValue = extractValue("value"); 
-
-    const tagConfig = tagArray.map(val => `${val.name}="${val.value}"`).join(' ');
-    
-    setTemplate(`<View>
-      <${selectedValue} name="${tagObjektName}" value="$${tagObjektValue}" ${tagConfig}/>
-    </View>`);
-    // change to code view
-  }
-
-  // create config string and use it in setTemplate method???
-  // also add keys to everything
-  const dataTypeOptions = () => {
-    const dataTypeAttributes = tags[selectedValue].attrs;
-    return (
-      <>
-        {Object.values(dataTypeAttributes).map(item => {
-          if (item.type === 'string') {
-            return (
-              <div> 
-                {/* add keys to this wrapper and on change on value  */}
-                <label>
-                  {item.name}: 
-                  <input type="text" value={item.default !== false ? item.default : ''} onChange={handleOptionSelection}></input>
-                </label>
-              </div> 
-            );
-          }
-          else if (Array.isArray(item.type)) {
-            return (
-              <div>
-                <label><input type="checkbox" name={item.name} onChange={handleOptionSelection}/>{item.name}</label><br/>
-              </div> 
-            );
-          }
-        })}
-        <Form.Actions size="small">
-            <Button look="primary" size="compact" style={{ width: 120 }} onClick={createTemplate}>
-              Create New Template
-            </Button>
-        </Form.Actions>
-      </>
-    );
-  };
-
-  return(
-    <div className={configClass.elem("empty-config")}>
-      <Form>
-        <select value={selectedValue} onChange={handleObjectSelection}>
-            {Object.entries(tags).map(([key, value]) => (
-              value.type === 'ObjectTag' && <option value={key}>{key}</option>
-            ))}
-        </select>
-      {selectedValue && dataTypeOptions()}
-    </Form>
-    </div>
-  );
-}
-
 
 const Label = ({ label, template, color }) => {
   const value = label.getAttribute("value");
@@ -607,7 +486,7 @@ const Configurator = ({
               className={configClass.elem("visual")}
               style={{ display: configure === "visual" ? undefined : "none" }}
             >
-              {isEmptyConfig(config) && <EmptyConfigPlaceholder setTemplate={setTemplate}/>}
+              {isEmptyConfig(config) && <EmptyConfigVisual setTemplate={setTemplate} setConfigure={setConfigure}/>}
               <ConfigureColumns columns={columns} project={project} template={template} />
               {template.controls.map((control) => (
                 <ConfigureControl control={control} template={template} key={control.getAttribute("name")} />
@@ -625,7 +504,14 @@ const Configurator = ({
                 </Elem>
               </Block>
             )}
-            <Button look="primary" size="compact" style={{ width: 120 }} onClick={onSave} waiting={waiting}>
+            <Button 
+              look="primary" 
+              size="compact" 
+              style={{ width: 120 }} 
+              onClick={onSave} 
+              waiting={waiting}
+              disabled={disableSaveButton}
+              >
               {waiting ? "Saving..." : "Save"}
             </Button>
           </Form.Actions>
@@ -658,6 +544,7 @@ export const ConfigPage = ({
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
   const [template, setCurrentTemplate] = React.useState(null);
   const api = useAPI();
+  const [isEmptyConfigState, setIsEmptyConfigState] = React.useState(isEmptyConfig(initialConfig));
 
   const setConfig = React.useCallback(
     (config) => {
@@ -674,6 +561,7 @@ export const ConfigPage = ({
       tpl.onConfigUpdate = setConfig;
       setConfig(config);
       setCurrentTemplate(tpl);
+      setIsEmptyConfigState(isEmptyConfig(config));
     },
     [setConfig, setCurrentTemplate],
   );
@@ -748,7 +636,7 @@ export const ConfigPage = ({
           setTemplate={setTemplate}
           onBrowse={setMode.bind(null, "list")}
           onValidate={onValidate}
-          disableSaveButton={disableSaveButton}
+          disableSaveButton={disableSaveButton || isEmptyConfigState}
           onSaveClick={onSaveClick}
           warning={warning}
         />

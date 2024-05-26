@@ -1,0 +1,23 @@
+.configure
+  &__data-type-options
+    display: flex
+    flex-direction: column
+    gap: 16px // Adjust this value to increase/decrease spacing
+
+  .label
+    display: flex
+    align-items: center
+    justify-content: space-between
+    width: 100%
+    padding: 8px 0 // Optional: add padding for better spacing
+
+    .label__text
+      margin-right: 4px // Space between the text and the tooltip
+      flex: 0 0 auto
+
+    .label__field
+      flex: 1 1 auto // Input takes the remaining space
+      display: flex
+      align-items: center
+      gap: 8px // Space between multiple input elements (if any)
+
