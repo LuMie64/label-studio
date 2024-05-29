@@ -42,6 +42,7 @@ export const ImageEntity = types
     contrastGrade: types.optional(types.number, 100),
 
     imageSource: types.optional(types.string, '')
+
   })
   .volatile(() => ({
     stageRatio: 1,

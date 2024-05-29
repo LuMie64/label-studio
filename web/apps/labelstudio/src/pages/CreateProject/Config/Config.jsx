@@ -16,6 +16,8 @@ import "./Config.styl";
 import { Preview } from "./Preview";
 import { DEFAULT_COLUMN, EMPTY_CONFIG, isEmptyConfig, Template } from "./Template";
 import { TemplatesList } from "./TemplatesList";
+import { EmptyConfigVisual } from "./emptyconfigvisual"
+
 
 import "./codemirror.css";
 import "./config-hint";
@@ -23,20 +25,6 @@ import tags from "./schema.json";
 
 const wizardClass = cn("wizard");
 const configClass = cn("configure");
-
-const EmptyConfigPlaceholder = () => (
-  <div className={configClass.elem("empty-config")}>
-    <p>Your labeling configuration is empty. It is required to label your data.</p>
-    <p>
-      Start from one of our predefined templates or create your own config on the Code panel. The labeling config is
-      XML-based and you can{" "}
-      <a href="https://labelstud.io/tags/" target="_blank" rel="noreferrer">
-        read about the available tags in our documentation
-      </a>
-      .
-    </p>
-  </div>
-);
 
 const Label = ({ label, template, color }) => {
   const value = label.getAttribute("value");
@@ -499,7 +487,9 @@ const Configurator = ({
               className={configClass.elem("visual")}
               style={{ display: configure === "visual" ? undefined : "none" }}
             >
-              {isEmptyConfig(config) && <EmptyConfigPlaceholder />}
+
+              {isEmptyConfig(config) && <EmptyConfigVisual setTemplate={setTemplate} setConfigure={setConfigure}/>}
+
               <ConfigureColumns columns={columns} project={project} template={template} />
               {template.controls.map((control) => (
                 <ConfigureControl control={control} template={template} key={control.getAttribute("name")} />
@@ -517,6 +507,14 @@ const Configurator = ({
                 </Elem>
               </Block>
             )}
+            <Button 
+              look="primary" 
+              size="compact" 
+              style={{ width: 120 }} 
+              onClick={onSave} 
+              waiting={waiting}
+              disabled={disableSaveButton}
+              >
             <Button look="primary" size="compact" style={{ width: 120 }} onClick={onSave} waiting={waiting}>
               {waiting ? "Saving..." : "Save"}
             </Button>
@@ -550,6 +548,8 @@ export const ConfigPage = ({
   const [selectedRecipe, setSelectedRecipe] = React.useState(null);
   const [template, setCurrentTemplate] = React.useState(null);
   const api = useAPI();
+  const [isEmptyConfigState, setIsEmptyConfigState] = React.useState(isEmptyConfig(initialConfig));
+
 
   const setConfig = React.useCallback(
     (config) => {
@@ -566,6 +566,8 @@ export const ConfigPage = ({
       tpl.onConfigUpdate = setConfig;
       setConfig(config);
       setCurrentTemplate(tpl);
+      setIsEmptyConfigState(isEmptyConfig(config));
+
     },
     [setConfig, setCurrentTemplate],
   );
@@ -640,7 +642,7 @@ export const ConfigPage = ({
           setTemplate={setTemplate}
           onBrowse={setMode.bind(null, "list")}
           onValidate={onValidate}
-          disableSaveButton={disableSaveButton}
+          disableSaveButton={disableSaveButton || isEmptyConfigState}
           onSaveClick={onSaveClick}
           warning={warning}
         />

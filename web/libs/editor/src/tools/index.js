@@ -15,6 +15,7 @@ import { MagicWand } from "./MagicWand";
 import { Selection } from "./Selection";
 import { AutoEnhance } from "./AutoEnhance";
 
+
 export {
   Brush,
   Erase,
@@ -30,4 +31,5 @@ export {
   MagicWand,
   Selection,
   AutoEnhance,
+
 };
