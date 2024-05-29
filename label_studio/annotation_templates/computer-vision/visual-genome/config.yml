@@ -20,13 +20,7 @@ config: |
       </View>
    
     </View>
-    <Image name="image" value="$image"
-      zoom="true" 
-      rotateControl="true" 
-      zoomControl="true" 
-      brightnesscontrol="true" 
-      contrastcontrol="true"
-    />
+    <Image name="image" value="$image"/>
     <Style>
     .label-column .lsf-labels {
       display: flex;
