@@ -13,6 +13,7 @@ import { Brightness } from "./Brightness";
 import { Contrast } from "./Contrast";
 import { MagicWand } from "./MagicWand";
 import { Selection } from "./Selection";
+import { AutoEnhance } from "./AutoEnhance";
 
 export {
   Brush,
@@ -28,4 +29,5 @@ export {
   Zoom,
   MagicWand,
   Selection,
+  AutoEnhance,
 };
