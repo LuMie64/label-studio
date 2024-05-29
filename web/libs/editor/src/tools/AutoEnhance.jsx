@@ -1,30 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { observer } from "mobx-react";
-import { types, getEnv } from "mobx-state-tree";
+import { types } from "mobx-state-tree";
 
 import BaseTool from "./Base";
 import ToolMixin from "../mixins/Tool";
-import { getTransformedImageData } from "../utils/image";
+
+import { info } from "../common/Modal/Modal";
+import Infomodal from "../components/Infomodal/Infomodal";
+import Spinner from "../components/Spinner/Spinner";
 
 import { Tool } from "../components/Toolbar/Tool";
-import { IconBrightnessTool, IconHandTool} from "../assets/icons";
+import { IconAutoEnhance } from "../assets/icons";
 
 
 const ToolView = observer(({ item }) => {
   return (
-    <Tool
-      active={item.selected}
-      ariaLabel="autoenhance"
-      label="AutoEnhance"
-      onClick={() => {item.autoEnhance();}}
-      icon={item.loading ? <IconHandTool /> : <IconBrightnessTool />}
-    />
+    <>
+      <Tool
+        active={item.selected}
+        ariaLabel="autoenhance"
+        label="AutoEnhance"
+        onClick={() => { item.handleEnhanceClick(); }}
+        icon={<IconAutoEnhance/>}
+      />
+    {item.loading && <Spinner />}
+    </>
   );
 });
 
 const _Tool = types
   .model("AutoEnhance", {
-    group: "control",    
+    group: "control", 
+    loading: false,
+    error: types.maybeNull(types.string),
   })
   .views((self) => ({
     get viewClass() {
@@ -32,97 +40,93 @@ const _Tool = types
     },
   }))
   .actions((self) => ({
+
+    setLoading(value) {
+      self.loading = value;
+    },
+
+    handleEnhanceClick() {
+     info({
+        title: "Autoenhance can take a while. Please be patient",
+        okText: "Proceed",
+        onOkPress: () => {
+          self.autoEnhance();
+        },
+      });
+    },
+
     async autoEnhance() {
 
-        self.loading = true;
+        self.setLoading(true);
 
-        //localhost or 127... depending on server 
+        //localhost or 127... depending on server ToDo Fix
 
         async function testPrerequisties() {
-          console.log('now this')
-          const response = await fetch('http://localhost:8080/api/autoenhance', {
-            method: "GET",
-            headers :{
-              'SECRET_KEY': 'o1svcbi8vv44*9^0d-c3d866+h424)p1wh&(^nn(aw@v^+0x1q'
-            } }
-          );
-          if (response.status !== 200){ 
-            const data = await response.json();
-            return data.connection_staus;
-          } else {
-            return 'success';
+          try {
+            const response = await fetch('http://localhost:8080/api/autoenhance', {
+              method: "GET",
+              headers :{
+                'SECRET_KEY': 'o1svcbi8vv44*9^0d-c3d866+h424)p1wh&(^nn(aw@v^+0x1q'
+              } }
+            );
+            if (response.status !== 200){ 
+              const data = await response.json();
+              throw new Error(data.connection_status || 'Unknown error');
+            } else {
+              return 'success'; 
+            } 
+          } catch (error) {
+              throw new Error('Server connection failed: ' + error.message);
           }
         };
 
-        async function sendImageToServer(formData) {
-          console.log(formData)
+        async function sendImageToServer(data) {
           const response = await fetch('http://localhost:8080/api/autoenhance', {
             method: 'POST',
-            body: formData,
+            body: data,
             headers :{
               'SECRET_KEY': 'o1svcbi8vv44*9^0d-c3d866+h424)p1wh&(^nn(aw@v^+0x1q',
             }}
           );
           if (response.status === 200) {
-            const data =  await response.json();
-            return data;
+            const server_response =  await response.json();
+            return server_response;
           } else {
-            print(response.status)
+            if (response.status === 400) {
+              const server_response =  await response.json();
+              throw new Error(`Server error: ${server_response.Error}`);
+            }
+            else {
+              throw new Error(`Server error: ${response.status}`);
+            }
           }
         };
+        try {
+          const canConnect = await testPrerequisties()
 
-        const canConnect = await testPrerequisties()
+          if (canConnect !== 'success') {
+            console.log(canConnect);
+          } else {  
+            const image = self.obj;
+            const imageRef = image.imageRef;
 
-        console.log(canConnect)
+            const jsonStr = JSON.stringify({src: imageRef.src});
 
-        if (canConnect !== 'success') {
-          console.log(canConnect)
-        } else {  
-          const image = self.obj;
-          const imageRef = image.imageRef;
-          const viewportWidth = Math.round(image.canvasSize.width);
-          const viewportHeight = Math.round(image.canvasSize.height);
-          const [transformedData, transformedCanvas] = getTransformedImageData(
-            imageRef, 
-            imageRef.naturalWidth, 
-            imageRef.naturalHeight, 
-            imageRef.width, 
-            imageRef.height, 
-            viewportWidth, 
-            viewportHeight,
-            image.zoomScale,
-            image.zoomingPositionX, 
-            image.zoomingPositionY, 
-            image.zoomScale > 1
-          )
+            const serverReply = await sendImageToServer(jsonStr);
 
-          console.log(imageRef.src)
+            self.setLoading(false);
 
-          const newTransformedData = {
-            width: transformedData.width,
-            height: transformedData.height,
-            src: imageRef.src
-          };
-
-          const jsonStr = JSON.stringify(newTransformedData);
-
-          const blob = new Blob([jsonStr], { type: 'application/json' });
-          // Use FormData to send the Blob
-          const formData = new FormData();
-          formData.append('file', blob, 'filename.json');
-
-          const serverReply = await sendImageToServer(formData);
-
-          console.log(self.obj)
-
-          self.obj.set
-          
-          self.obj.setImageSource(serverReply.new_img_url)
-
-          console.log(serverReply)
-
+            if (serverReply.new_img_url !== undefined) {
+              self.obj.setNewImageSource(serverReply.new_img_url);
+            } else {
+              self.obj.setNewImageSource(serverReply.enhanced_image_str);
+            }
+          }
+        } catch (error) {
+          Infomodal.error(error.message, "Error");
+        } finally {
+          self.setLoading(false);
         }
-       // get image properties from ImageRef, use getTransformedImageData to get pixel values, send to python, perform magic adjust source of image??
     },
   }));
 

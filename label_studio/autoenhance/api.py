@@ -4,16 +4,19 @@ import base64
 import os
 
 from urllib.parse import unquote
-from replicate.client import Client # add to requirements
+# from replicate.client import Client # add to requirements
+import replicate
+from PIL import Image
 
 from rest_framework import status, views
 from rest_framework.response import Response
 
-from .functions import has_replicate_key, has_internet_connection, get_maxim_image_base
+from .functions import has_replicate_key, has_internet_connection, get_maxim_image_base, resize_image, test_repliacte_url
+from .models import EnhancedImageModel
+
 from label_studio.core.settings.label_studio import SECRET_KEY, BASE_DATA_DIR
 
-from PIL import Image
-from io import BytesIO
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,32 +34,38 @@ class AutoEnhanceAPI(views.APIView):
         return Response({'connection_staus': 'Connection Possible'}, status=status.HTTP_200_OK)
             
     def post(self, request):
-        file = request.FILES['file']
-        content_bytes = file.read()
-        dict_object = json.loads(content_bytes.decode('utf-8'))
 
-        _, img_src = unquote(dict_object.get('src')).split('data/')
+        dict_object = json.loads(request.body)
+
+        print(dict_object)
+
+        url_path, img_src = unquote(dict_object.get('src')).split('data/')
+       
+        enhanced_image, created = EnhancedImageModel.objects.get_or_create(original_src=img_src)
+
+        if not created:
+            if test_repliacte_url(enhanced_image.enhanced_src_url):
+                return Response({'enhanced_image_str': enhanced_image.enhanced_src, 
+                                'new_img_url': enhanced_image.enhanced_src_url},
+                                status=status.HTTP_200_OK)
 
         original_img_path = BASE_DATA_DIR + '/media/' + img_src
         file_name, img_type = os.path.splitext(original_img_path)
 
         adjusted_img_path = file_name + '_temp' + img_type # could actually be tempfile, recheck
-        
-        print(original_img_path)
-        print(img_type)
-      
-        img = Image.open(original_img_path)
-
-        if img_type == '.png':
-            img.save(adjusted_img_path, optimize=True)
-        elif img_type in ['.jpg', '.jpeg']:
-            img.save(adjusted_img_path, quality='web_medium')
-        else:
-            return Response({'Error': 'weird image path'})
+              
+        try:
+            if img_type == '.png':
+                img = Image.open(original_img_path)
+                img.save(adjusted_img_path, optimize=True)
+            elif img_type in ['.jpg', '.jpeg']:
+                resize_image(original_img_path, adjusted_img_path, 100000)
+            else:
+                return Response({'Error': 'weird image path'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'Error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
         print(f"original file size: {os.path.getsize(original_img_path)} new file: {os.path.getsize(adjusted_img_path)}")
-
-        replicate = Client(api_token='r8_a0AauDPpAK9eRVDEjlgrk3TIgn1juLV3hsg1B')
 
         maxim_input = {
             "image": open(adjusted_img_path, 'rb'),
@@ -66,7 +75,7 @@ class AutoEnhanceAPI(views.APIView):
         print(maxim_input)
 
         try:
-            ouput = replicate.run(
+            output = replicate.run(
                 "google-research/maxim:494ca4d578293b4b93945115601b6a38190519da18467556ca223d219c3af9f9",
                 maxim_input
             )
@@ -75,5 +84,14 @@ class AutoEnhanceAPI(views.APIView):
             logger.error(f'Failure on connecting to maxim: {str(e)}')
             return Response({'Error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response({'enhanced_image_str': get_maxim_image_base(ouput, img_type), 'new_img_url': ouput}, status=status.HTTP_200_OK)
-
+        enhanced_src, saved = get_maxim_image_base(output, img_type, adjusted_img_path)
+        
+        enhanced_image.enhanced_src=enhanced_src
+        if saved:
+            enhanced_image.enhanced_src_url=f'{url_path}data/{img_src[:-len(img_type)]}_temp{img_type}'
+        else:
+            enhanced_image.enhanced_src_url=output
+        
+        enhanced_image.save()
+        
+        return Response({'enhanced_image_str': enhanced_src, 'new_img_url': output}, status=status.HTTP_200_OK)

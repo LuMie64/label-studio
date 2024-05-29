@@ -197,8 +197,4 @@ export const ImageEntity = types
       self.contrastGrade = grade;
     },
 
-    setImageSource(newSrc) {
-      self.src = newSrc;
-    },
-
   }));
