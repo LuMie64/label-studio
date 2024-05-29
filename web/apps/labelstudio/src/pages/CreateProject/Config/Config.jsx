@@ -515,7 +515,6 @@ const Configurator = ({
               waiting={waiting}
               disabled={disableSaveButton}
               >
-            <Button look="primary" size="compact" style={{ width: 120 }} onClick={onSave} waiting={waiting}>
               {waiting ? "Saving..." : "Save"}
             </Button>
           </Form.Actions>

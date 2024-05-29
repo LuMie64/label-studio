@@ -10,11 +10,12 @@ from PIL import Image
 
 from rest_framework import status, views
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 
 from .functions import has_replicate_key, has_internet_connection, get_maxim_image_base, resize_image, test_repliacte_url
 from .models import EnhancedImageModel
 
-from label_studio.core.settings.label_studio import SECRET_KEY, BASE_DATA_DIR
+from label_studio.core.settings.label_studio import BASE_DATA_DIR
 
 
 
@@ -27,24 +28,24 @@ class AutoEnhanceAPI(views.APIView):
     def get(self, request):
         if not has_internet_connection():
             logger.error('Cannot connect to MAXIM due to bad internet connection')
-            return Response({'connection_staus': 'Please Connect to the internt'}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response({'connection_status': 'Please Connect to the internt'}, status=status.HTTP_502_BAD_GATEWAY)
         if not has_replicate_key():
             logger.error('Cannot connect to MAXIM due to Missing replicate Key')
-            return Response({'connection_staus': 'Please set a replicate Token'}, status=status.HTTP_401_UNAUTHORIZED)
-        return Response({'connection_staus': 'Connection Possible'}, status=status.HTTP_200_OK)
+            return Response({'connection_status': 'Please set a replicate Token'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'connection_status': 'Connection Possible'}, status=status.HTTP_200_OK)
             
     def post(self, request):
 
-        dict_object = json.loads(request.body)
+        token = Token.objects.get(user=request.user)
 
-        print(dict_object)
+        dict_object = json.loads(request.body)
 
         url_path, img_src = unquote(dict_object.get('src')).split('data/')
        
         enhanced_image, created = EnhancedImageModel.objects.get_or_create(original_src=img_src)
 
         if not created:
-            if test_repliacte_url(enhanced_image.enhanced_src_url):
+            if test_repliacte_url(enhanced_image.enhanced_src_url, str(token)):
                 return Response({'enhanced_image_str': enhanced_image.enhanced_src, 
                                 'new_img_url': enhanced_image.enhanced_src_url},
                                 status=status.HTTP_200_OK)

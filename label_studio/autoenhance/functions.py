@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image # ToDo: add to requirements
 
 from core.settings.base import BASE_DATA_DIR
+from label_studio.core.settings.label_studio import SECRET_KEY
 
 def has_replicate_key():
     env_key = 'REPLICATE_API_TOKEN' 
@@ -17,8 +18,8 @@ def has_replicate_key():
     env_filepath = os.path.join(BASE_DATA_DIR, '.env')
     environ.Env.read_env(env_filepath)
 
-#    return bool(env.str(env_key, ''))
-    return True
+    return bool(env.str(env_key, ''))
+
 
 def has_internet_connection():
     try:
@@ -72,9 +73,14 @@ def get_maxim_image_base(img_url, img_type, save_path=None):
 
         return img_str, saved
         
-def test_repliacte_url(img_url):
+def test_repliacte_url(img_url, token):
     if img_url:
-        response = requests.get(img_url)
+        if not 'replicate' in img_url:
+            headers = {'SECRET_KEY': SECRET_KEY, 'Authorization': 'Token {token}'}
+            print(headers)
+            response = requests.get(img_url, headers=headers)
+        else:
+            response = requests.get(img_url)
         return response.status_code == 200
     else:
         return False

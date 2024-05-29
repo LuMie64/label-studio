@@ -69,12 +69,20 @@ const _Tool = types
                 'SECRET_KEY': 'o1svcbi8vv44*9^0d-c3d866+h424)p1wh&(^nn(aw@v^+0x1q'
               } }
             );
-            if (response.status !== 200){ 
-              const data = await response.json();
-              throw new Error(data.connection_status || 'Unknown error');
+
+            const contentType = response.headers.get('content-type');
+            let data;
+            
+            if (contentType && contentType.indexOf('application/json') !== -1) {
+              data = await response.json();
+            }
+            
+            if (response.status !== 200) {
+              throw new Error(data?.connection_status || 'Unknown error');
             } else {
-              return 'success'; 
-            } 
+              return 'success';
+            }
+
           } catch (error) {
               throw new Error('Server connection failed: ' + error.message);
           }
@@ -105,7 +113,7 @@ const _Tool = types
           const canConnect = await testPrerequisties()
 
           if (canConnect !== 'success') {
-            console.log(canConnect);
+            throw new Error(canConnect);
           } else {  
             const image = self.obj;
             const imageRef = image.imageRef;
