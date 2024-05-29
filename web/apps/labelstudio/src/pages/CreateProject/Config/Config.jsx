@@ -18,6 +18,7 @@ import { DEFAULT_COLUMN, EMPTY_CONFIG, isEmptyConfig, Template } from "./Templat
 import { TemplatesList } from "./TemplatesList";
 import { EmptyConfigVisual } from "./emptyconfigvisual"
 
+
 import "./codemirror.css";
 import "./config-hint";
 import tags from "./schema.json";
@@ -486,7 +487,9 @@ const Configurator = ({
               className={configClass.elem("visual")}
               style={{ display: configure === "visual" ? undefined : "none" }}
             >
+
               {isEmptyConfig(config) && <EmptyConfigVisual setTemplate={setTemplate} setConfigure={setConfigure}/>}
+
               <ConfigureColumns columns={columns} project={project} template={template} />
               {template.controls.map((control) => (
                 <ConfigureControl control={control} template={template} key={control.getAttribute("name")} />
@@ -512,6 +515,7 @@ const Configurator = ({
               waiting={waiting}
               disabled={disableSaveButton}
               >
+            <Button look="primary" size="compact" style={{ width: 120 }} onClick={onSave} waiting={waiting}>
               {waiting ? "Saving..." : "Save"}
             </Button>
           </Form.Actions>
@@ -546,6 +550,7 @@ export const ConfigPage = ({
   const api = useAPI();
   const [isEmptyConfigState, setIsEmptyConfigState] = React.useState(isEmptyConfig(initialConfig));
 
+
   const setConfig = React.useCallback(
     (config) => {
       _setConfig(config);
@@ -562,6 +567,7 @@ export const ConfigPage = ({
       setConfig(config);
       setCurrentTemplate(tpl);
       setIsEmptyConfigState(isEmptyConfig(config));
+
     },
     [setConfig, setCurrentTemplate],
   );

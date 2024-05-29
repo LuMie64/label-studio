@@ -73,6 +73,9 @@ export const API_CONFIG = {
     createWebhook: "POST:/webhooks",
     deleteWebhook: "DELETE:/webhooks/:pk",
     webhooksInfo: "/webhooks/info",
+    checkMaximPrerequisite: "/autoenhance",
+    getMaximEnhancement: "POST: /autoenhance",
+
   },
   alwaysExpectJSON: false,
 };

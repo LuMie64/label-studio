@@ -613,6 +613,8 @@ const Model = types
 
       if (self.rotatecontrol) manager.addTool("RotateTool", Tools.Rotate.create({}, env));
 
+      if (true) manager.addTool("AutoEnhance", Tools.AutoEnhance.create({}, env));
+      
       createImageEntities();
     }
 
@@ -628,10 +630,17 @@ const Model = types
       return manager;
     }
 
+    function setNewImageSource(newSrc) {
+      self.currentImageEntity.src = newSrc;
+      self.currentImageEntity.imageLoaded = false;
+      self.currentImageEntity.preload();
+    }
+
     return {
       afterAttach,
       getToolsManager,
       afterResultCreated,
+      setNewImageSource
     };
   })
   .extend((self) => {

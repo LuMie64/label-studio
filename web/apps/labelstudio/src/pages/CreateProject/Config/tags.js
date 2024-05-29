@@ -23,6 +23,16 @@ const OBJECTS = {
         type: Boolean,
         param: "rotateControl",
       },
+      brightnessControl: {
+        title: "Show brightness control in toolbar",
+        type: Boolean,
+        param: "brightnessControl"
+      },
+      contrastControl: {
+        title: "Show contrast control in toolbar",
+        type: Boolean,
+        param: "contrastControl"
+      },
     },
   },
   Text: {
