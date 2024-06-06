@@ -587,6 +587,8 @@
   "Channel": {
     "name": "Channel",
     "description": "Channel tag can be used to label time series data",
+    "type": "LabelControlTag",
+    "usefor": "TimeSeries",
     "attrs": {
       "column": {
         "name": "column",
@@ -728,6 +730,8 @@
   "Brush": {
     "name": "Brush",
     "description": "The `Brush` tag is used for image segmentation tasks where you want to apply a mask or use a brush to draw a region on the image.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
     "attrs": {
       "name": {
         "name": "name",
@@ -778,6 +782,9 @@
   "BrushLabels": {
     "name": "BrushLabels",
     "description": "The `BrushLabels` tag for image segmentation tasks is used in the area where you want to apply a mask or use a brush to draw a region on the image.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
+    "needsLabel": true,
     "attrs": {
       "name": {
         "name": "name",
@@ -1024,6 +1031,8 @@
   "Ellipse": {
     "name": "Ellipse",
     "description": "The `Ellipse` tag is used to add an elliptical bounding box to an image. Use for bounding box image segmentation tasks with ellipses.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
     "attrs": {
       "name": {
         "name": "name",
@@ -1088,6 +1097,9 @@
   "EllipseLabels": {
     "name": "EllipseLabels",
     "description": "The `EllipseLabels` tag creates labeled ellipses. Use to apply labels to ellipses for semantic segmentation.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
+    "needsLabel": true,
     "attrs": {
       "name": {
         "name": "name",
@@ -1197,6 +1209,8 @@
   "KeyPoint": {
     "name": "KeyPoint",
     "description": "The `KeyPoint` tag is used to add a key point to an image without selecting a label. This can be useful when you have only one label to assign to the key point.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
     "attrs": {
       "name": {
         "name": "name",
@@ -1255,6 +1269,9 @@
   "KeyPointLabels": {
     "name": "KeyPointLabels",
     "description": "The `KeyPointLabels` tag creates labeled keypoints. Use to apply labels to identified key points, such as identifying facial features for a facial recognition labeling project.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
+    "needsLabel": true,
     "attrs": {
       "name": {
         "name": "name",
@@ -1396,6 +1413,8 @@
   },
   "Labels": {
     "name": "Labels",
+    "type": "LabelControlTag",
+    "needsLabel": true,
     "description": "The `Labels` tag provides a set of labels for labeling regions in tasks for machine learning and data science projects. Use the `Labels` tag to create a set of labels that can be assigned to identified region and specify the values of labels to assign to regions.\n\nAll types of Labels can have dynamic value to load labels from task. This task data should contain a list of options to create underlying `<Label>`s. All the parameters from options will be transferred to corresponding tags.\n\nThe Labels tag can be used with audio and text data types. Other data types have type-specific Labels tags.",
     "attrs": {
       "name": {
@@ -1650,6 +1669,8 @@
   "Polygon": {
     "name": "Polygon",
     "description": "The `Polygon` tag is used to add polygons to an image without selecting a label. This can be useful when you have only one label to assign to the polygon. Use for image segmentation tasks.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
     "attrs": {
       "name": {
         "name": "name",
@@ -1721,6 +1742,9 @@
   },
   "PolygonLabels": {
     "name": "PolygonLabels",
+    "type": "LabelControlTag",
+    "usefor": "Image",
+    "needsLabel": true,
     "description": "The `PolygonLabels` tag is used to create labeled polygons. Use to apply labels to polygons in semantic segmentation tasks.\n\nUse with the following data types: image.",
     "attrs": {
       "name": {
@@ -1895,6 +1919,8 @@
   "Rectangle": {
     "name": "Rectangle",
     "description": "The `Rectangle` tag is used to add a rectangle (Bounding Box) to an image without selecting a label. This can be useful when you have only one label to assign to a rectangle.\n\nUse with the following data types: image.",
+    "type": "LabelControlTag",
+    "usefor": "Image",
     "attrs": {
       "name": {
         "name": "name",
@@ -1958,6 +1984,9 @@
   },
   "RectangleLabels": {
     "name": "RectangleLabels",
+    "type": "LabelControlTag",
+    "usefor": "Image",
+    "needsLabel": true,
     "description": "The `RectangleLabels` tag creates labeled rectangles. Use to apply labels to bounding box semantic segmentation tasks.\n\nUse with the following data types: image.",
     "attrs": {
       "name": {

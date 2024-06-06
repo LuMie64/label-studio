@@ -4,7 +4,6 @@ import base64
 import os
 
 from urllib.parse import unquote
-# from replicate.client import Client # add to requirements
 import replicate
 from PIL import Image
 
@@ -70,10 +69,8 @@ class AutoEnhanceAPI(views.APIView):
 
         maxim_input = {
             "image": open(adjusted_img_path, 'rb'),
-            "model": "Image Enhancement (Retouching)"
+            "model": "Image Deblurring (GoPro)"
         }     
-
-        print(maxim_input)
 
         try:
             output = replicate.run(
