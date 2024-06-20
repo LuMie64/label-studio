@@ -1,5 +1,5 @@
 .configure
-  &__data-type-options
+  &__individual-sub-forms
     display: flex
     flex-direction: column
     gap: 16px // Adjust this value to increase/decrease spacing
@@ -20,4 +20,53 @@
       display: flex
       align-items: center
       gap: 8px // Space between multiple input elements (if any)
+  
+  &__menu-item-content
+    padding-left: 10px
+    padding-top: 4px
+    row-gap: 5px
+    border-top: 1px solid rgba(0,0,0,0.15)
+    border-left: 2px solid rgba(0,0,0,0.15)
+    border-top-left-radius: 10px
 
+  &__new-tag-heading
+    background linear-gradient(0deg, rgba(#000, 0.01), rgba(#000, 0.01)), #F0F8FF // lighter blue background
+    box-shadow inset 0px 1px 0px rgba(#000, 0.1), inset 0px 0px 0px 1px rgba(#000, 0.2)
+    border-radius: 5px
+    row-gap: 5px
+    display: flex
+    align-items: center
+    padding: 10px
+    position: relative
+
+    .h4
+      margin: 0
+
+    .button
+      margin-left: 20px
+    
+
+  &__icon-wrapper
+    margin-left: auto
+    display: flex
+    align-items: center
+    justify-content: center
+    height: 100%
+
+
+  &__sub-label-info
+    padding-left: 10px
+    padding-top: 10px
+    row-gap: 5px
+    border-top: 1px solid rgba(0,0,0,0.15)
+    border-left: 2px solid rgba(0,0,0,0.15)
+    border-top-left-radius: 10px
+
+  &__add-label-container
+    display: flex
+    align-items: center
+    gap: 10px
+    margin-bottom: 5px
+
+  &__add-label-button
+    margin-top: 15px

@@ -1,9 +1,9 @@
 import React, { useState, useRef } from "react";
 import { Tooltip } from "apps/labelstudio/src/components/Tooltip/Tooltip";
-import { Button, Menu } from "../../../components";
+import { Button } from "../../../components";
 import { Form, Input, Label } from "../../../components/Form";
 import { cn } from "../../../utils/bem";
-import { IconInfoOutline } from "../../../assets/icons";
+import { IconInfoOutline, LsMinus, LsPlus } from "../../../assets/icons";
 import tags from "./schema.json";
 import './empyconfigvisual.styl';
 
@@ -13,59 +13,89 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
   const [dataType, setDataType] = useState('');
   const dataTagArray = useRef([]);
   const controlTagArray = useRef([])
-  
-  // Filtering tags for ObjectTag and LabelControlTag types
+
   const objectTags = Object.entries(tags).filter(([_, value]) => value.type === 'ObjectTag');
   const labelControlTags = Object.entries(tags).filter(([_, value]) => value.type === 'LabelControlTag');
- 
-  const hasControlTagsForDataType = labelControlTags.some(([_, value]) => value.usefor === dataType); // ToDo: This should be an Array
 
+  const hasControlTagsForDataType = labelControlTags.some(([_, value]) => value.usefor === dataType);
 
   const handleDataTypeSelection = (event) => {
     setDataType(event.target.value);
   };
 
-  const addToDataTagArray = (event) => {
-
-    const { name, type, value, checked } = event.target;
+  const MiniCollapsable = ({handleClick, buttonName, heading, children}) => {
     
+    const [collapsed, setCollapsed] = useState(true)
+
+    return (
+      <>
+        <div className={configClass.elem("new-tag-heading")} 
+        onClick={() => setCollapsed(collapsed ? false : true)}>
+          <h4>{heading}</h4>
+          <Button look="primary" size="small" onClick={handleClick}>{buttonName}</Button>
+          <div className={configClass.elem('icon-wrapper')}>
+            {collapsed ? <LsMinus /> : <LsPlus />}
+          </div>
+      </div>
+      {!collapsed && children}
+    </>
+    )
+  }
+
+  const addToDataTagArray = (event) => {
+    const { name, type, value, checked } = event.target;
     const inputValue = type === 'checkbox' ? checked : value;
 
     const existingIndex = dataTagArray.current.findIndex(tag => tag.tagName === name);
-    
     if (existingIndex > -1) {
-      // Check if the value has actually changed
       if (dataTagArray.current[existingIndex].value !== inputValue) {
         dataTagArray.current[existingIndex] = { tagName: name, value: inputValue };
       }
     } else {
-      dataTagArray.current.push({ tagName: name, value: inputValue});
+      dataTagArray.current.push({ tagName: name, value: inputValue });
     }
   };
 
   const addToControlTagArray = (event, tagId) => {
     const { name, type, value, checked } = event.target;
     const inputValue = type === 'checkbox' ? checked : value;
-  
+
     const existingIndex = controlTagArray.current.findIndex(entry => entry[tagId]);
-  
     if (existingIndex > -1) {
-      // Update existing entry
       controlTagArray.current[existingIndex][tagId][name] = inputValue;
     } else {
-      // Create new entry
       controlTagArray.current.push({ [tagId]: { [name]: inputValue } });
     }
-  
-    console.log(controlTagArray.current);
   };
-  
 
+  const addLabelToControlTagArray = (event, tagId, labelId) => {
+    const { name, type, value, checked } = event.target;
+    const inputValue = type === 'checkbox' ? checked : value;
+
+    const relatedLabelObjectIndex = controlTagArray.current.findIndex(entry => entry[tagId]);
+    if (relatedLabelObjectIndex > -1) {
+      const tagEntry = controlTagArray.current[relatedLabelObjectIndex][tagId];
+
+      if (tagEntry.label) {
+        const labelIndex = tagEntry.label.findIndex(label => label.hasOwnProperty(labelId));
+        if (labelIndex > -1) {
+          tagEntry.label[labelIndex][labelId][name] = inputValue;
+        } else {
+          tagEntry.label.push({ [labelId]: { [name]: inputValue } });
+        }
+      } else {
+        tagEntry.label = [{ [labelId]: { [name]: inputValue } }];
+      }
+    } else {
+      controlTagArray.current.push({
+        [tagId]: {
+          label: [{ [labelId]: { [name]: inputValue } }]
+        }
+      });
+    }
+  };
 
   const createTemplate = () => {
-
-    console.log(dataTagArray.current)
-
     let hasNameTag = false;
     let hasValueTag = false;
 
@@ -91,16 +121,34 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
 
     const allTags = [...additionalTags, ...filteredTagArray];
     const dataTagConfig = allTags.map(tag => `${tag.tagName}="${tag.value}"`).join(' ');
-
     const controlTagConfig = controlTagArray.current.map(entry => {
       const id = Object.keys(entry)[0];
+      const labelType = id.split("_")[0];
       const attributes = entry[id];
       const attributeStrings = Object.entries(attributes)
+        .filter(([key]) => key !== 'label')
         .map(([key, value]) => `${key}="${value}"`)
         .join(' ');
-      return `<${id.split("_").pop()} ${attributeStrings}/>`;
-  });
-  
+
+      let labelString = '';
+      if (attributes.label) {
+        labelString = attributes.label.map(label => {
+          const labelId = Object.keys(label)[0];
+          const labelAttributes = label[labelId];
+          const labelAttributeStrings = Object.entries(labelAttributes)
+            .filter(([_, value]) => value !== false)
+            .map(([key, value]) => `${key}="${value}"`)
+            .join(' ');
+          return `<Label ${labelAttributeStrings} />`;
+        }).join('\n');
+        return `<${labelType} ${attributeStrings}>
+    ${labelString}
+</${labelType}>`;
+      } else {
+        return `<${labelType} ${attributeStrings} />`;
+      }
+    }).join('\n');
+
     setTemplate(`<View>
       <${dataType} ${dataTagConfig}/>
       ${controlTagConfig}
@@ -111,13 +159,13 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
   const CreateSubForms = ({ selectedValue, handleOptionSelection }) => {
     const dataTypeAttributes = tags[selectedValue]?.attrs ?? {};
     return (
-      <div className="data-type-options">
+      <div className={configClass.elem("individual-sub-forms")}>
         {Object.values(dataTypeAttributes).map(item => {
           if (item.type === 'string') {
             return (
-              <Label 
+              <Label
                 key={item.name}
-                text={item.name} 
+                text={item.name}
                 description={
                   <Tooltip title={item.description} alignment="bottom-center">
                     <IconInfoOutline />
@@ -128,14 +176,14 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
                   name={item.name}
                   defaultValue={item.default !== false ? item.default : ''}
                   onChange={handleOptionSelection}
-                /> 
+                />
               </Label>
             );
           } else if (Array.isArray(item.type)) {
             return (
-              <Label 
+              <Label
                 key={item.name}
-                text={item.name} 
+                text={item.name}
                 description={
                   <Tooltip title={item.description} alignment="bottom-center">
                     <IconInfoOutline />
@@ -146,7 +194,7 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
                   name={item.name}
                   onChange={handleOptionSelection}
                 />
-              </Label>  
+              </Label>
             );
           }
           return null;
@@ -155,38 +203,45 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
     );
   };
 
-  const SubLabelInfo = () => {
+  const SubLabelInfo = ({ tagId }) => {
     const [labels, setLabels] = useState([]);
-  
+
     const addNewLabel = () => {
       setLabels([...labels, { id: `label_${labels.length}`, type: 'Label' }]);
     };
-  
+
     const removeLabel = (labelId) => {
       setLabels(labels.filter(label => label.id !== labelId));
     };
-  
+    // ToDo: Mini Collabalbe hides the Button and therefore can never be rendered, adjust button somehow
     return (
       <div>
-        <button onClick={addNewLabel}>Add Label</button>
         {labels.map(label => (
-          <div key={label.id} className="label-container">
-            <h3>{label.id}</h3>
-            <CreateSubForms
-              selectedValue={label.type}
-              handleOptionSelection={(event) => console.log(event.target.value)}
-            />
-            <button onClick={() => removeLabel(label.id)}>Remove</button>
-          </div>
-        ))}
+          <>
+          <MiniCollapsable
+            heading={label.id}
+            handleClick={() => removeLabel(label.id)}
+            buttonName="Remove"
+          >
+            <div key={label.id} className={configClass.elem("sub-label-info")}>
+              <CreateSubForms
+                selectedValue={label.type}
+                handleOptionSelection={(event) => addLabelToControlTagArray(event, tagId, label.id)}
+              />
+            </div>
+            </MiniCollapsable>
+          </>
+      ))}
+      <Button look="primary" size="small" onClick={addNewLabel} className={configClass.elem("add-label-button")}>
+        Add Label
+      </Button>
       </div>
     );
   };
 
-  const TagSelection = ({ onTagChange }) => {
+  const TagSelection = ({ controlTags, onTagChange, addControlTag }) => {
     const [selectedOptions, setSelectedOptions] = useState([]);
     const [tagIds, setTagIds] = useState({});
-    const [controlTags, setControlTags] = useState([]);
 
     const handleSelectionChange = (event) => {
       const options = event.target.options;
@@ -199,7 +254,7 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
       setSelectedOptions(selected);
     };
 
-    const addControlTag = () => {
+    const handleAddControlTag = () => {
       const newTagIds = { ...tagIds };
       const newTags = selectedOptions.map(option => {
         newTagIds[option] = (newTagIds[option] || 0) + 1;
@@ -209,31 +264,20 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
           needsLabel: tags[option]?.needsLabel || false,
         };
       });
-    
-      setTagIds(newTagIds);
-      setControlTags([...controlTags, ...newTags]);
-      setSelectedOptions([]);
-      onTagChange([...controlTags, ...newTags]);
-    };
 
-    const removeControlTag = (tagId) => {
-      const newTags = controlTags.filter(tag => tag.id !== tagId);
-      setControlTags(newTags);
-      onTagChange(newTags);
-      const existingIndex = controlTagArray.current.findIndex(entry => entry[tagId])
-      if (existingIndex > -1) {
-        controlTagArray.current.splice(existingIndex, 1)
-      }
+      setTagIds(newTagIds);
+      addControlTag([...controlTags, ...newTags]);
+      setSelectedOptions([]);
     };
 
     return (
       <div className="form-group">
         <label htmlFor="object-select">Select Control Tags</label>
-        <div>
-          <select 
-            id="object-select" 
-            value={selectedOptions} 
-            onChange={handleSelectionChange} 
+        <div className={configClass.elem("add-label-container")}>
+          <select
+            id="object-select"
+            value={selectedOptions}
+            onChange={handleSelectionChange}
             multiple
           >
             <option value="" disabled>Control Tags</option>
@@ -245,66 +289,62 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
               )
             ))}
           </select>
-          <button onClick={addControlTag}>Add</button>
-        </div>
-        <div>
-          <p>Selected Control Tags:</p>
-          <ul>
-            {controlTags.map(tag => (
-              <li key={tag.id}>
-                {tag.id}
-                <button onClick={() => removeControlTag(tag.id)}>Remove</button>
-              </li>
-            ))}
-          </ul>
+          <Button look="primary" size="compact" onClick={handleAddControlTag}>Add</Button>
         </div>
       </div>
     );
   };
 
   const SelectControlTags = () => {
-    const [menuTags, setMenuTags] = useState([]);
-    const [collapsedTags, setCollapsedTags] = useState({});
+    const [controlTags, setControlTags] = useState([]);
+    
+    const controlTagArray = useRef([]);
 
     const handleTagChange = (tags) => {
-      console.log(menuTags)
-      setMenuTags(tags);
+      setControlTags(tags);
     };
 
-    const toggleCollapse = (tagId) => {
-      setCollapsedTags(prevState => ({
-        ...prevState,
-        [tagId]: !prevState[tagId]
-      }));
+    const addControlTag = (tags) => {
+      setControlTags(tags);
+    };
+
+    const removeControlTag = (tagId) => {
+      const newTags = controlTags.filter(tag => tag.id !== tagId);
+      setControlTags(newTags);
+      const existingIndex = controlTagArray.current.findIndex(entry => entry[tagId]);
+      if (existingIndex > -1) {
+        controlTagArray.current.splice(existingIndex, 1);
+      }
     };
 
     return (
       <div>
-        <TagSelection onTagChange={handleTagChange} />
-        <Menu>
-          {menuTags.map(tag => (
-            <React.Fragment key={tag.id}>
-              <Menu.Item onClick={() => toggleCollapse(tag.id)}>
-                {tag.id}
-              </Menu.Item>
-              {!collapsedTags[tag.id] && (
-                <div className="menu-item-content">
-                  <h4>{tag.type}</h4>
-                  <CreateSubForms 
+        <TagSelection
+          controlTags={controlTags}
+          onTagChange={handleTagChange}
+          addControlTag={addControlTag}
+        />
+          {controlTags.map(tag => (
+              <div className={configClass.elem("menu-item-content")}>
+                <MiniCollapsable 
+                  handleClick={() => removeControlTag(tag.id)}
+                  buttonName = "Remove"
+                  heading = {tag.type}
+                >
+                  <CreateSubForms
                     key={tag.id}
-                    selectedValue={tag.type} 
+                    selectedValue={tag.type}
                     handleOptionSelection={(event) => addToControlTagArray(event, tag.id)}
                   />
-                {tag.needsLabel && < SubLabelInfo /> }
-                </div>
-              )}
-            </React.Fragment>
+                  <div style={{ height: '15px'}}> </div> {/*Add some spacing in between label and sublabel*/}
+                  {tag.needsLabel && <SubLabelInfo tagId={tag.id} />}
+               </MiniCollapsable>
+            </div>
           ))}
-        </Menu>
       </div>
     );
   };
-  
+
   return (
     <div className={configClass.elem("empty-config")}>
       <Form>
@@ -320,16 +360,16 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
           </select>
         </div>
         <Form.Row columnCount={1} rowGap="32px">
-          {dataType && 
-            <CreateSubForms 
-              selectedValue={dataType} 
-              handleOptionSelection={addToDataTagArray} 
+          {dataType &&
+            <CreateSubForms
+              selectedValue={dataType}
+              handleOptionSelection={addToDataTagArray}
             />
           }
+          {dataType && hasControlTagsForDataType && <SelectControlTags />}
         </Form.Row>
-        {dataType && hasControlTagsForDataType && <SelectControlTags />}
         <Form.Actions size="small">
-          <Button look="primary" size="compact" style={{ width: 120 }} onClick={createTemplate}>
+          <Button look="primary" size="large" style={{ width: 120 }} onClick={createTemplate}>
             Create New Template
           </Button>
         </Form.Actions>
