@@ -37,7 +37,9 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
             {collapsed ? <LsMinus /> : <LsPlus />}
           </div>
       </div>
-      {!collapsed && children}
+      <div style={{ display: collapsed ? 'none' : 'block' }}>
+        {children}
+      </div>
     </>
     )
   }
@@ -121,6 +123,7 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
 
     const allTags = [...additionalTags, ...filteredTagArray];
     const dataTagConfig = allTags.map(tag => `${tag.tagName}="${tag.value}"`).join(' ');
+ 
     const controlTagConfig = controlTagArray.current.map(entry => {
       const id = Object.keys(entry)[0];
       const labelType = id.split("_")[0];
@@ -139,29 +142,39 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
             .filter(([_, value]) => value !== false)
             .map(([key, value]) => `${key}="${value}"`)
             .join(' ');
-          return `<Label ${labelAttributeStrings} />`;
+          return `\t<Label ${labelAttributeStrings} />`;
         }).join('\n');
         return `<${labelType} ${attributeStrings}>
-    ${labelString}
-</${labelType}>`;
+  ${labelString}
+  </${labelType}>`;
       } else {
         return `<${labelType} ${attributeStrings} />`;
       }
-    }).join('\n');
-
+    }).join('\n\n');
+  
     setTemplate(`<View>
-      <${dataType} ${dataTagConfig}/>
-      ${controlTagConfig}
-    </View>`);
+  
+  <${dataType} ${dataTagConfig}/>
+  
+  ${controlTagConfig}
+  
+  </View>`);
     setConfigure('code');
   };
 
   const CreateSubForms = ({ selectedValue, handleOptionSelection }) => {
     const dataTypeAttributes = tags[selectedValue]?.attrs ?? {};
+  
+    const isBooleanStringArray = (arr) => arr.every(val => val === 'true' || val === 'false');
+  
     return (
       <div className={configClass.elem("individual-sub-forms")}>
         {Object.values(dataTypeAttributes).map(item => {
-          if (item.type === 'string') {
+          const isStringType = item.type === 'string';
+          const isArrayType = Array.isArray(item.type);
+          const isBoolStringArray = isArrayType && isBooleanStringArray(item.type);
+  
+          if (isStringType || isArrayType) {
             return (
               <Label
                 key={item.name}
@@ -169,31 +182,34 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
                 description={
                   <Tooltip title={item.description} alignment="bottom-center">
                     <IconInfoOutline />
-                  </Tooltip>}
+                  </Tooltip>
+                }
               >
-                <Input
-                  type="text"
-                  name={item.name}
-                  defaultValue={item.default !== false ? item.default : ''}
-                  onChange={handleOptionSelection}
-                />
-              </Label>
-            );
-          } else if (Array.isArray(item.type)) {
-            return (
-              <Label
-                key={item.name}
-                text={item.name}
-                description={
-                  <Tooltip title={item.description} alignment="bottom-center">
-                    <IconInfoOutline />
-                  </Tooltip>}
-              >
-                <Input
-                  type="checkbox"
-                  name={item.name}
-                  onChange={handleOptionSelection}
-                />
+                {isStringType && (
+                  <Input
+                    type="text"
+                    name={item.name}
+                    defaultValue={item.default !== false ? item.default : ''}
+                    onChange={handleOptionSelection}
+                  />
+                )}
+                {isBoolStringArray && (
+                  <Input
+                    type="checkbox"
+                    name={item.name}
+                    onChange={handleOptionSelection}
+                  />
+                )}
+                {!isStringType && !isBoolStringArray && (
+                    <select name={item.name} onChange={handleOptionSelection}>
+                      <option value="" disabled>Select Value</option>
+                      {item.type.map((option, index) => (
+                        <option key={index} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                )}
               </Label>
             );
           }
@@ -202,6 +218,7 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
       </div>
     );
   };
+  
 
   const SubLabelInfo = ({ tagId }) => {
     const [labels, setLabels] = useState([]);
@@ -213,7 +230,7 @@ export const EmptyConfigVisual = ({ setTemplate, setConfigure }) => {
     const removeLabel = (labelId) => {
       setLabels(labels.filter(label => label.id !== labelId));
     };
-    // ToDo: Mini Collabalbe hides the Button and therefore can never be rendered, adjust button somehow
+
     return (
       <div>
         {labels.map(label => (
