@@ -4,13 +4,14 @@ import io
 import requests
 import base64
 
-from io import BytesIO
+from PIL import Image 
 
-import numpy as np
-from PIL import Image # ToDo: add to requirements
+from rest_framework.test import APIRequestFactory
 
 from core.settings.base import BASE_DATA_DIR
 from label_studio.core.settings.label_studio import SECRET_KEY
+from data_import.api import UploadedFileResponse
+
 
 def has_replicate_key():
     env_key = 'REPLICATE_API_TOKEN' 
@@ -54,31 +55,34 @@ def resize_image(input_path, output_path, max_size, max_dimensions=(600,800)):
         f.write(buffer.getvalue())
 
 
-def get_maxim_image_base(img_url, img_type, save_path=None):
-    saved = False
+def get_maxim_image_base(img_url, img_type):
     response = requests.get(img_url)
     if response.status_code == 200:
-        image = Image.open(BytesIO(response.content))
-        buffered = BytesIO()
+        image = Image.open(io.BytesIO(response.content))
+        buffered = io.BytesIO()
         if img_type == '.jpg':
             img_type = '.jpeg'
         image.save(buffered, img_type[1:])
-        if save_path:
-            try:
-                image.save(save_path)
-                saved = True
-            except:
-                saved = False
         img_str = base64.b64encode(buffered.getvalue())
 
-        return img_str, saved
+        return img_str
+
         
-def test_repliacte_url(img_url, token):
+def test_repliacte_url(img_url, request):
     if img_url:
         if not 'replicate' in img_url:
-            headers = {'SECRET_KEY': SECRET_KEY, 'Authorization': 'Token {token}'}
-            print(headers)
-            response = requests.get(img_url, headers=headers)
+            _, file_name = img_url.split('upload/')
+
+            factory = APIRequestFactory()
+            new_request = factory.get(request.path, request.GET)
+            
+            new_request.user = request.user
+            new_request.session = request.session
+
+            view = UploadedFileResponse.as_view()
+
+            response = view(new_request, filename=file_name)
+
         else:
             response = requests.get(img_url)
         return response.status_code == 200

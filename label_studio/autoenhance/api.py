@@ -1,6 +1,5 @@
 import logging
 import json
-import base64
 import os
 
 from urllib.parse import unquote
@@ -9,20 +8,31 @@ from PIL import Image
 
 from rest_framework import status, views
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated
 
 from .functions import has_replicate_key, has_internet_connection, get_maxim_image_base, resize_image, test_repliacte_url
 from .models import EnhancedImageModel
 
 from label_studio.core.settings.label_studio import BASE_DATA_DIR
 
-
-
 logger = logging.getLogger(__name__)
+
+# ToDos: Adjust fetching of original image, make secure, prefetch image if existing token seems to not connect to a user
+
+ENHANCEMENT_TYPE_MAPPER = {
+    "Deblurring": "Image Deblurring (RealBlur_J)",
+    "Denoising": "Image Denoising",
+    "Deraining (Streak)": "Image Deraining (Rain streak)",
+    "Deraining (drops)": "Image Deraining (Rain drop)",
+    "Dehazing Indoor": "Image Dehazing Indoor",
+    "Dehazing Outdoor": "Image Dehazing Outdoor",
+    "Enhancement (Low-light)": "Image Enhancement (Low-light)",
+    "Enhancement (Retouching)": "Image Enhancement (Retouching)"
+}
 
 class AutoEnhanceAPI(views.APIView):
 
-    #permission_required = None # ToDo
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request):
         if not has_internet_connection():
@@ -35,16 +45,21 @@ class AutoEnhanceAPI(views.APIView):
             
     def post(self, request):
 
-        token = Token.objects.get(user=request.user)
+        payload = json.loads(request.body)
 
-        dict_object = json.loads(request.body)
+        url_path, img_src = unquote(payload.get('src')).split('data/')
 
-        url_path, img_src = unquote(dict_object.get('src')).split('data/')
-       
-        enhanced_image, created = EnhancedImageModel.objects.get_or_create(original_src=img_src)
+        enhancement_model =  ENHANCEMENT_TYPE_MAPPER.get(payload.get('enhancementModel'), "Image Deblurring (GoPro)")
 
-        if not created:
-            if test_repliacte_url(enhanced_image.enhanced_src_url, str(token)):
+        try:
+            enhanced_image = EnhancedImageModel.objects.get(original_src=img_src, enhancement_model=enhancement_model)
+            model_exists = True
+        except EnhancedImageModel.DoesNotExist:
+            enhanced_image = EnhancedImageModel(original_src=img_src, enhancement_model=enhancement_model)
+            model_exists = False
+
+        if model_exists:
+            if test_repliacte_url(enhanced_image.enhanced_src_url, request):
                 return Response({'enhanced_image_str': enhanced_image.enhanced_src, 
                                 'new_img_url': enhanced_image.enhanced_src_url},
                                 status=status.HTTP_200_OK)
@@ -64,12 +79,10 @@ class AutoEnhanceAPI(views.APIView):
                 return Response({'Error': 'weird image path'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'Error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-        print(f"original file size: {os.path.getsize(original_img_path)} new file: {os.path.getsize(adjusted_img_path)}")
 
         maxim_input = {
             "image": open(adjusted_img_path, 'rb'),
-            "model": "Image Deblurring (GoPro)"
+            "model": enhancement_model
         }     
 
         try:
@@ -81,15 +94,11 @@ class AutoEnhanceAPI(views.APIView):
         except Exception as e:
             logger.error(f'Failure on connecting to maxim: {str(e)}')
             return Response({'Error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        enhanced_src, saved = get_maxim_image_base(output, img_type, adjusted_img_path)
+  
+        enhanced_src = get_maxim_image_base(output, img_type)
         
         enhanced_image.enhanced_src=enhanced_src
-        if saved:
-            enhanced_image.enhanced_src_url=f'{url_path}data/{img_src[:-len(img_type)]}_temp{img_type}'
-        else:
-            enhanced_image.enhanced_src_url=output
         
-        enhanced_image.save()
+        enhanced_image.save(user=request.user, file_name=adjusted_img_path.split('/')[-1], url_path=url_path)
         
         return Response({'enhanced_image_str': enhanced_src, 'new_img_url': output}, status=status.HTTP_200_OK)

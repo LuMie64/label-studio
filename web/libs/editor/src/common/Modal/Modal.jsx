@@ -1,4 +1,4 @@
-import { createRef } from "react";
+import { createRef, useState } from "react";
 import { render } from "react-dom";
 import { cn } from "../../utils/bem";
 import { Button } from "../Button/Button";
@@ -96,6 +96,54 @@ export const info = ({ okText, onOkPress, ...props }) => {
   return modal;
 };
 
+export const selectOption = ({ options, preselectedOption, onSelect, okText, onOkPress, ...props }) => {
+
+  const SelectOptions = ({ options, onSelect, preselectedOption }) => {
+    const [selectedOption, setSelectedOption] = useState(preselectedOption || '');  
+  
+    const handleChange = (event) => {
+      const value = event.target.value;
+      setSelectedOption(value);
+      onSelect(value);
+    };
+  
+    return (
+      <div>
+        <label htmlFor="options">Choose an option:</label>
+        <select id="options" value={selectedOption} onChange={handleChange}>
+          <option value="" disabled>Select an option</option>
+          {options.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
+  const modal = standaloneModal({
+    ...props,
+    body: <SelectOptions options={options} onSelect={onSelect} preselectedOption={preselectedOption}/>,
+    footer: (
+      <Space align="end">
+        <Button
+          onClick={() => {
+            onOkPress?.();
+            modal.close();
+          }}
+          look="primary"
+          size="compact"
+        >
+          {okText ?? "OK"}
+        </Button>
+      </Space>
+    ),
+  });
+
+  return modal;
+};
+
 export { standaloneModal as modal };
 export { Modal };
 
@@ -103,4 +151,5 @@ Object.assign(Modal, {
   info,
   confirm,
   modal: standaloneModal,
+  selectOption,
 });
